@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "fat16.h"
 
-uint8_t fat16_buffer[FAT16_BUFFER_SIZE];
 Fat16State fat16_state;
 
 /*************************************************************************
@@ -19,7 +18,7 @@ int8_t fat16_init() {
     fat16_seek(0x1BE);
 
     for(i=0; i<4; i++) {
-        fat16_read(sizeof(PartitionTable));
+    	fat16_read(sizeof(PartitionTable));
 
         if(FAT16_part->partition_type == 4 ||
            FAT16_part->partition_type == 6 ||
@@ -28,7 +27,7 @@ int8_t fat16_init() {
     }
 
     if(i == 4) {// none of the partitions were FAT16
-        return FAT16_ERR_NO_PARTITION_FOUND;
+    	return FAT16_ERR_NO_PARTITION_FOUND;
     }
 
     fat16_state.fat_start = 512 * FAT16_part->start_sector; // temporary
@@ -71,7 +70,7 @@ int8_t fat16_init() {
  Input
  Return:
  **************************************************************************/
-int8_t fat16_open_file(int8_t *filename, int8_t *ext) {
+int8_t fat16_open_file(uint8_t *filename, uint8_t *ext) {
     int8_t i, bytes;
 
 #ifdef DEBUG
@@ -202,8 +201,8 @@ int8_t fat16_read_file(int8_t bytes) {
  	 	   Next fat16_read should continue from here
  **************************************************************************/
 void fat16_seek(uint32_t offset) {
-	sd_sector = offset >> 9;
-	sd_pos = offset & 0x1FF;
+	sd_sector = (offset >> 9);
+	sd_pos = (offset & 0x1FF);
 }
 
 /*************************************************************************
@@ -318,11 +317,12 @@ uint8_t SD_command(uint8_t cmd, uint32_t arg, uint8_t crc, uint8_t read) {
 	uartPuts("CMD ");
 	uwrite_hex(cmd);
 */
+	/*
 	char LCDbuff[16];
 	LCD_Clear();
 	sprintf(LCDbuff, "CMD: %d", cmd);
 	LCD_WriteText(LCDbuff);
-
+*/
 
 	CS_ENABLE();
 	SPI_write(cmd);
@@ -339,7 +339,7 @@ uint8_t SD_command(uint8_t cmd, uint32_t arg, uint8_t crc, uint8_t read) {
 	CS_DISABLE();
 
 	for(i=0; i<read; i++) {
-	_LCD_WriteData(buffer[i]);
+	//_LCD_WriteData(buffer[i]);
 			/*
 		uartPutc(' ');
 		uwrite_hex(buffer[i]);
