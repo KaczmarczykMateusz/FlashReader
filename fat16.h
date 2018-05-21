@@ -70,12 +70,19 @@ typedef struct {
     uint8_t media_descriptor;	//@brief: Media descriptor (bit #2 holds whether the disk is removable)
     uint16_t fat_size_sectors;
 
-#if 0
+//TODO: skip values below with introducing function searching boot sector with omitting them
     uint16_t sectors_per_track;	//@brief: Number of sectors per track (cylinder), CHS addressing
     uint16_t number_of_heads;	//@brief: Number of heads, CHS addressing
     uint32_t hidden_sectors;	//@brief: Number of hidden sectors, which is the number of sectors before the boot sector (this field may be set to zero, though)
     uint32_t total_sectors_long;//@brief: Total number of sectors on the disk/partition, if this is above 32 MiB (only valid if the field at offset 0x013 is zero)
+/// End of functions to skip but values below also vary regarding FAT type
 
+	uint32_t 	FAT32_SectorSize;		// like fat_size_sectors for FAT32
+	uint32_t  	ExtFlags;		// extended flags:
+	uint32_t  	FSVers;			// filesystem version
+	uint32_t 	RootClust;		// start cluster for root directory
+
+#if 0
     uint8_t drive_number;		//@brief: Drive number (this field is at offset 0x024 in FAT12/FAT16)
     uint8_t current_head;		//@brief: Current head (internal to DOS; this field is at offset 0x025 in FAT12/FAT16)
     uint8_t boot_signature;		//@brief: Boot signature, the value 0x29 indicates the three next fields are valid (this field is at offset 0x026 in FAT12/FAT16)

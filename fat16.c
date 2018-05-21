@@ -17,13 +17,20 @@ int8_t fat16_init() {
 
     fat16_seek(0x1BE);
 
+    uint8_t isFat32 = 0;
     for(i=0; i<4; i++) {
     	fat16_read(sizeof(PartitionTable));
 
         if(FAT16_part->partition_type == 4 ||
            FAT16_part->partition_type == 6 ||
-           FAT16_part->partition_type == 14)
+           FAT16_part->partition_type == 14) {
+        	isFat32 = 0;
             break;
+        } else if(FAT16_part->partition_type == 11 ||
+        			FAT16_part->partition_type == 12) {
+        	isFat32 = 1;
+        	break;
+        }
     }
 
     if(i == 4) {// none of the partitions were FAT16
@@ -40,16 +47,31 @@ int8_t fat16_init() {
 
     fat16_state.fat_start += FAT16_boot->reserved_sectors * 512;
 
-    root_start = fat16_state.fat_start + (uint32_t)FAT16_boot->fat_size_sectors *
-        (uint32_t)FAT16_boot->number_of_fats * 512;
 
-    fat16_state.data_start = root_start + sizeof(Fat16Entry) *
-        (uint32_t)FAT16_boot->root_dir_entries;
+
+
+
+
+
+
+
+    if(isFat32) {
+    	root_start = FAT16_boot->RootClust * fat16_state.sectors_per_cluster;
+        fat16_state.data_start = FAT16_part->start_sector + FAT16_boot->reserved_sectors +
+        			(FAT16_boot->number_of_fats * FAT16_boot->FAT32_SectorSize);
+        fat16_state.file_left = (fat16_state.data_start - root_start); // This is not working
+    } else {
+    	root_start = fat16_state.fat_start + (uint32_t)FAT16_boot->fat_size_sectors *
+    	        (uint32_t)FAT16_boot->number_of_fats * 512;
+        fat16_state.data_start = root_start + sizeof(Fat16Entry) *
+            (uint32_t)FAT16_boot->root_dir_entries;
+        // Prepare for fat16_open_file(), cluster is not needed
+        fat16_state.file_left = FAT16_boot->root_dir_entries * sizeof(Fat16Entry);
+    }
 
     fat16_state.sectors_per_cluster = FAT16_boot->sectors_per_cluster;
 
     // Prepare for fat16_open_file(), cluster is not needed
-    fat16_state.file_left = FAT16_boot->root_dir_entries * sizeof(Fat16Entry);
     fat16_state.cluster_left = 0xFFFFFFFF; // avoid FAT lookup with root dir
 
 #ifdef DEBUG
@@ -96,7 +118,7 @@ int8_t fat16_open_file(uint8_t *filename, uint8_t *ext) {
             }
         }
         if(i < 8) {// not the filename we are looking for
-            continue;
+        	continue;				// TODO: while FAT32 this condition makes it to loop forever
         }
 
         for(i=0; i<3; i++) {// we don't have memcmp on a MCU...
@@ -105,7 +127,7 @@ int8_t fat16_open_file(uint8_t *filename, uint8_t *ext) {
             }
         }
         if(i < 3) {// not the extension we are looking for
-            continue;
+            continue; // TODO: see line:114, this condition is the same
         }
 
 #ifdef DEBUG
@@ -155,7 +177,7 @@ int8_t fat16_read_file(int8_t bytes) {
     }
 
     if(fat16_state.cluster_left == 0) {
-        fat16_seek(fat16_state.fat_start + (uint32_t)fat16_state.cluster*2);
+        fat16_seek(fat16_state.fat_start + (uint32_t)fat16_state.cluster * 2);
         fat16_read(2);
 
         fat16_state.cluster = FAT16_ushort[0];
